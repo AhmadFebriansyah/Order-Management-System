@@ -1,0 +1,145 @@
+{
+	"info": {
+		"name": "Order Management System (OMS)",
+		"description": "Collection untuk testing API OMS - PT Cipta Kreasisandang Mandiri",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "order_number",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "payment_reference",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"idempotency_key\": \"{{$guid}}\",\n    \"user_id\": 1,\n    \"items\": [\n        {\n            \"product_id\": 1,\n            \"quantity\": 2\n        }\n    ],\n    \"shipping\": {\n        \"destination\": \"Jakarta\",\n        \"courier\": \"jne\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/orders",
+							"host": ["{{base_url}}"],
+							"path": ["api", "orders"]
+						},
+						"description": "Membuat order baru. Bersifat idempotent berdasarkan idempotency_key."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('order_number', jsonData.data.order_number);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Order Detail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/orders/{{order_number}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "orders", "{{order_number}}"]
+						},
+						"description": "Mengambil detail order berdasarkan order_number (UUID). Otomatis terisi dari response Create Order."
+					}
+				}
+			]
+		},
+		{
+			"name": "Webhooks",
+			"item": [
+				{
+					"name": "Payment Webhook - Success",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reference\": \"{{payment_reference}}\",\n    \"status\": \"SUCCESS\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/webhooks/payment",
+							"host": ["{{base_url}}"],
+							"path": ["api", "webhooks", "payment"]
+						},
+						"description": "Simulasi callback payment gateway sukses. Ganti {{payment_reference}} dengan external_reference dari record payment."
+					}
+				},
+				{
+					"name": "Payment Webhook - Failed",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reference\": \"{{payment_reference}}\",\n    \"status\": \"FAILED\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/webhooks/payment",
+							"host": ["{{base_url}}"],
+							"path": ["api", "webhooks", "payment"]
+						},
+						"description": "Simulasi callback payment gateway gagal."
+					}
+				}
+			]
+		}
+	]
+}
